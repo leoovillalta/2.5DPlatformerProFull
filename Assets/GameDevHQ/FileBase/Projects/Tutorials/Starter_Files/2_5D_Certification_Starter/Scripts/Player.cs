@@ -16,11 +16,14 @@ public class Player : MonoBehaviour
     private CharacterController _controller;
     [SerializeField]
     private float _jumpHeight = 10.0f;
+
+    private Animator _anim;
+    private bool _jumping = false;
     // Start is called before the first frame update
     void Start()
     {
         _controller = GetComponent<CharacterController>();
-        
+        _anim = GetComponentInChildren<Animator>();
     }
 
     // Update is called once per frame
@@ -33,12 +36,35 @@ public class Player : MonoBehaviour
         //
         if(_controller.isGrounded == true)
         {
-            float h = Input.GetAxis("Horizontal");
+            if (_jumping)
+            {
+                _jumping = false;
+                _anim.SetBool("Jumping", false);
+            }
+
+            float h = Input.GetAxisRaw("Horizontal");
             _direction = new Vector3(0, 0, h) * _speed;
+            _anim.SetFloat("Speed", Mathf.Abs(h));
+
+            //what directio to face
+            //if the direction is greater than 0 face right
+            //else face left
+            if (h != 0)
+            {
+                Vector3 facing = transform.localEulerAngles;
+                facing.y = _direction.z > 0 ? 0 : 180;
+                transform.localEulerAngles = facing;
+            }
+            
+
             //_velocity = _direction * _speed;
+            //If jumping was previously true
+            
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 _direction.y += _jumpHeight;
+                _jumping = true;
+                _anim.SetBool("Jumping", true);
             }
         }
         
