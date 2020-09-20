@@ -16,9 +16,12 @@ public class Player : MonoBehaviour
     private CharacterController _controller;
     [SerializeField]
     private float _jumpHeight = 10.0f;
+    private bool _onLedge = false;
 
     private Animator _anim;
     private bool _jumping = false;
+
+    private Ledge _activeLedge;
     // Start is called before the first frame update
     void Start()
     {
@@ -29,12 +32,24 @@ public class Player : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        CalculateMovement();
+        if (_onLedge)
+        {
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                _anim.SetTrigger("ClimbUp");
+            }
+        }
+    }
+
+    void CalculateMovement()
+    {
         //if grounded
         //calculate movement direction based on user input
         //if jump
         //adjust jumpheight
         //
-        if(_controller.isGrounded == true)
+        if (_controller.isGrounded == true)
         {
             if (_jumping)
             {
@@ -55,11 +70,11 @@ public class Player : MonoBehaviour
                 facing.y = _direction.z > 0 ? 0 : 180;
                 transform.localEulerAngles = facing;
             }
-            
+
 
             //_velocity = _direction * _speed;
             //If jumping was previously true
-            
+
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 _direction.y += _jumpHeight;
@@ -67,8 +82,24 @@ public class Player : MonoBehaviour
                 _anim.SetBool("Jumping", true);
             }
         }
-        
+
         _direction.y -= _gravity * Time.deltaTime;
         _controller.Move(_direction * Time.deltaTime);
+    }
+    public void GrabLedge(Vector3 handPos, Ledge currentLedge)
+    {
+        _onLedge = true;
+        _controller.enabled = false;
+        _anim.SetBool("GrabLedge", true);
+        _anim.SetFloat("Speed", 0.0f);
+        _anim.SetBool("Jumping", false);
+        transform.position = handPos;
+        _activeLedge = currentLedge;
+    }
+    public void ClimbUpComplete()
+    {
+        _anim.SetBool("GrabLedge", false);
+        transform.position = _activeLedge.GetStandPos();
+        _controller.enabled = true;
     }
 }
