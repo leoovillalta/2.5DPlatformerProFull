@@ -22,9 +22,16 @@ public class Player : MonoBehaviour
     private bool _jumping = false;
 
     private Ledge _activeLedge;
+    private int _gems;
+    private UIManager _uiManager;
     // Start is called before the first frame update
     void Start()
     {
+        _uiManager = GameObject.Find("Canvas").GetComponent<UIManager>();
+        if(_uiManager == null)
+        {
+            Debug.LogError("UIManager is null");
+        }
         _controller = GetComponent<CharacterController>();
         _anim = GetComponentInChildren<Animator>();
     }
@@ -101,5 +108,11 @@ public class Player : MonoBehaviour
         _anim.SetBool("GrabLedge", false);
         transform.position = _activeLedge.GetStandPos();
         _controller.enabled = true;
+    }
+
+    public void AddGems()
+    {
+        _gems++;
+        _uiManager.UpateGemDisplay(_gems);
     }
 }
