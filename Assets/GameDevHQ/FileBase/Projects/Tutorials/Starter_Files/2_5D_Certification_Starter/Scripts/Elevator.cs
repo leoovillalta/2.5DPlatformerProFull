@@ -36,11 +36,11 @@ public class Elevator : MonoBehaviour
             _floorPositionToMove = _firstFloor;
             _floorRequest = 1;
         }
-        Debug.Log("defineFloorToHeadTo() floor request= " + _floorRequest);
+        //Debug.Log("defineFloorToHeadTo() floor request= " + _floorRequest);
     }
     IEnumerator WaitInFloor()
     {
-        Debug.Log("WaitingInFloor()");
+        //Debug.Log("WaitingInFloor()");
         yield return new WaitForSeconds(_timeDelayPerFloor);
         _moveElevator = true;
         _moving = true;
@@ -57,7 +57,7 @@ public class Elevator : MonoBehaviour
         {
             _moveElevator = false;
             count++;
-            Debug.Log("Times Moved: " + count);
+            //Debug.Log("Times Moved: " + count);
             _moving = false;
             defineFloorToHeadTo(_floorRequest);
             StartCoroutine(WaitInFloor());

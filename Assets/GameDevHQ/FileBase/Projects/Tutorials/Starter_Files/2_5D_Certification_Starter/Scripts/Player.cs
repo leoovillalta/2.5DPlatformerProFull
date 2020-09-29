@@ -23,7 +23,11 @@ public class Player : MonoBehaviour
 
     private Ledge _activeLedge;
     private int _gems;
+    private bool _topOfLadder = false;
+    private bool _onLadder = false;
     private UIManager _uiManager;
+    private Ladder _activeLadder;
+    private Vector3 _facingLadder;
     // Start is called before the first frame update
     void Start()
     {
@@ -39,7 +43,15 @@ public class Player : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        CalculateMovement();
+        if (!_onLadder)
+        {
+            CalculateMovement();
+        }
+        else
+        {
+            LadderMovement();
+        }
+        
         if (_onLedge)
         {
             if (Input.GetKeyDown(KeyCode.E))
@@ -51,11 +63,6 @@ public class Player : MonoBehaviour
 
     void CalculateMovement()
     {
-        //if grounded
-        //calculate movement direction based on user input
-        //if jump
-        //adjust jumpheight
-        //
         if (_controller.isGrounded == true)
         {
             if (_jumping)
@@ -63,25 +70,16 @@ public class Player : MonoBehaviour
                 _jumping = false;
                 _anim.SetBool("Jumping", false);
             }
-
             float h = Input.GetAxisRaw("Horizontal");
             _direction = new Vector3(0, 0, h) * _speed;
             _anim.SetFloat("Speed", Mathf.Abs(h));
-
-            //what directio to face
-            //if the direction is greater than 0 face right
-            //else face left
             if (h != 0)
             {
                 Vector3 facing = transform.localEulerAngles;
+                
                 facing.y = _direction.z > 0 ? 0 : 180;
                 transform.localEulerAngles = facing;
             }
-
-
-            //_velocity = _direction * _speed;
-            //If jumping was previously true
-
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 _direction.y += _jumpHeight;
@@ -89,8 +87,14 @@ public class Player : MonoBehaviour
                 _anim.SetBool("Jumping", true);
             }
         }
-
         _direction.y -= _gravity * Time.deltaTime;
+        _controller.Move(_direction * Time.deltaTime);
+    }
+    void LadderMovement()
+    {
+        float v = Input.GetAxisRaw("Vertical");
+        _direction = new Vector3(0, v, 0)*3; 
+        _anim.SetFloat("LadderSpeed", v);
         _controller.Move(_direction * Time.deltaTime);
     }
     public void GrabLedge(Vector3 handPos, Ledge currentLedge)
@@ -109,10 +113,131 @@ public class Player : MonoBehaviour
         transform.position = _activeLedge.GetStandPos();
         _controller.enabled = true;
     }
+    public void GrabLadder(Vector3 handPos, Ladder currentLadder)
+    {
+        _onLadder = true;
 
+        transform.position = handPos;
+    }
     public void AddGems()
     {
         _gems++;
         _uiManager.UpateGemDisplay(_gems);
+    }
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        Debug.DrawRay(hit.point, hit.normal, Color.blue);
+        //IF touching the ladder
+
+        if(hit.transform.tag == "Ladder" && !_topOfLadder)
+        {
+            //HangingIdle
+            //push one unit up the ladder for not being 
+            
+            _controller.Move(Vector3.up * 0.1f);
+            _anim.SetBool("Ladder", true);
+            _onLadder = true;
+            Debug.Log("Move Up the ladder");
+        }
+        if(hit.transform.tag == "Ladder" && _topOfLadder)
+        {
+            //MoveDownAnimation trigger
+            //HangingIdle
+            _controller.Move(Vector3.left * 0.1f);
+            _onLadder = true;
+            _controller.enabled = false;
+            
+            _activeLadder = hit.transform.GetComponent<Ladder>();
+            transform.position = _activeLadder.GetHandPosTopOfLadder();
+            //flip
+            flipPlayer();
+            _anim.SetTrigger("ClimbDownLadder");
+            //StartCoroutine(WaitToMovePosition());
+            
+            
+            
+            
+            Debug.Log("MoveDownTheLadder");
+        }
+        if(_controller.isGrounded == true && _onLadder)
+        {
+            _onLadder = false;
+            _anim.SetFloat("LadderSpeed", 0.0f);
+            _anim.SetBool("Ladder", false);
+            //Moving down, if it hits ground remove Player from Ladder
+        }
+    }
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.tag == "TopOfLadder" && _onLadder)
+        {
+            _onLadder = false;
+            _controller.enabled = false;
+            _anim.SetTrigger("ClimbTopLadder");
+           
+            // _anim.SetBool("Ladder", false);
+            //transform.position = other.transform.parent.GetComponent<Ladder>().GetStandPos();
+            _activeLadder = other.transform.parent.GetComponent<Ladder>();
+            Debug.Log("reached top of the ladder");
+            //Reached the top
+            //activate final animation
+        }
+        
+    }
+    IEnumerator WaitToMovePosition()
+    {
+        //yield return new WaitForSeconds(0.1f);
+        yield return null;
+        _anim.SetTrigger("ClimbDownLadder");
+    }
+    public void StartClimbDown()
+    {
+
+    }
+    public void flipPlayer()
+    {
+        Debug.Log("FlipPlayer()");
+        
+        _facingLadder = transform.localEulerAngles;
+        _facingLadder.y = _facingLadder.y == 0 ? 180 : 0;
+        Debug.Log(_facingLadder);
+        transform.localEulerAngles = _facingLadder;
+        //transform.eulerAngles = Vector3(0, 180, 0);
+    }
+    public void ClimbDownLadder()
+    {
+        _anim.SetFloat("Speed", 0.0f);
+        _anim.SetFloat("LadderSpeed", 0.0f);
+        _anim.SetBool("Ladder", true);
+        _onLadder = true;
+       
+        _controller.enabled = true;
+        _topOfLadder = false;
+    }
+    public void ClimbUpLadderComplete()
+    {
+
+
+        _anim.SetFloat("Speed", 0.0f);
+        _anim.SetFloat("LadderSpeed", 0.0f);
+        _anim.SetBool("Ladder", false);
+        _onLadder = false;
+        transform.position = _activeLadder.GetStandPos();
+        _controller.enabled = true;
+    }
+    private void OnTriggerStay(Collider other)
+    {
+        if(other.tag == "TopOfLadder")
+        {
+            _topOfLadder = true;
+        }
+    }
+   
+    private void OnTriggerExit(Collider other)
+    {
+        if(other.tag == "TopOfLadder")
+        {
+            _topOfLadder = false;
+        }
     }
 }
