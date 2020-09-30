@@ -115,7 +115,7 @@ public class Player : MonoBehaviour
                 _anim.SetBool("Jumping", true);
             }
             
-            if (Input.GetKeyDown(KeyCode.LeftShift))
+            if (Input.GetKeyDown(KeyCode.LeftShift) && h!=0)
             {
                 _direction = new Vector3(0, 0, 0);
                 _rolling = true;
