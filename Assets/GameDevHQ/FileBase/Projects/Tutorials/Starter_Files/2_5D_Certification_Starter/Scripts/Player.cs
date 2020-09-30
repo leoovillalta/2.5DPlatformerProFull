@@ -28,6 +28,10 @@ public class Player : MonoBehaviour
     private UIManager _uiManager;
     private Ladder _activeLadder;
     private Vector3 _facingLadder;
+    private bool _rolling = false;
+    [SerializeField]
+    private float _rollDistance = 3.0f;
+    private bool _rollRight = true;
     // Start is called before the first frame update
     void Start()
     {
@@ -60,10 +64,24 @@ public class Player : MonoBehaviour
             }
         }
     }
+    void Roll()
+    {
+        if (_rolling)
+        {
+            _rolling = false;
+            _anim.SetBool("Rolling", false);
+        }
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+        {
+            _rolling = true;
+            _direction.z += _rollDistance;
+            _anim.SetBool("Rolling",true);
+        }
+    }
 
     void CalculateMovement()
     {
-        if (_controller.isGrounded == true)
+        if (_controller.isGrounded == true && !_rolling)
         {
             if (_jumping)
             {
@@ -73,11 +91,21 @@ public class Player : MonoBehaviour
             float h = Input.GetAxisRaw("Horizontal");
             _direction = new Vector3(0, 0, h) * _speed;
             _anim.SetFloat("Speed", Mathf.Abs(h));
+            
+            
             if (h != 0)
             {
                 Vector3 facing = transform.localEulerAngles;
                 
                 facing.y = _direction.z > 0 ? 0 : 180;
+                if(facing.y == 0)
+                {
+                    _rollRight = true;
+                }
+                else
+                {
+                    _rollRight = false;
+                }
                 transform.localEulerAngles = facing;
             }
             if (Input.GetKeyDown(KeyCode.Space))
@@ -86,10 +114,40 @@ public class Player : MonoBehaviour
                 _jumping = true;
                 _anim.SetBool("Jumping", true);
             }
+            
+            if (Input.GetKeyDown(KeyCode.LeftShift))
+            {
+                _direction = new Vector3(0, 0, 0);
+                _rolling = true;
+                if (_rollRight)
+                {
+                    _direction.z += _rollDistance;
+                }
+                else
+                {
+                    _direction.z -= _rollDistance;
+                }
+                
+                _anim.SetBool("Rolling", true);
+                StartCoroutine(RollTime());
+            }
+            //Roll();
         }
         _direction.y -= _gravity * Time.deltaTime;
         _controller.Move(_direction * Time.deltaTime);
+      
     }
+    public void FinishRolling()
+    {
+        _rolling = false;
+        _anim.SetBool("Rolling", false);
+    }
+    IEnumerator RollTime()
+    {
+        yield return new WaitForSeconds(1f);
+        FinishRolling();
+    }
+    
     void LadderMovement()
     {
         float v = Input.GetAxisRaw("Vertical");
@@ -135,8 +193,13 @@ public class Player : MonoBehaviour
             //push one unit up the ladder for not being 
             
             _controller.Move(Vector3.up * 0.1f);
+            _controller.enabled = false;
+            _activeLadder = hit.transform.GetComponent<Ladder>();
+            transform.position = _activeLadder.GetHanPosBottomOfLadder();
             _anim.SetBool("Ladder", true);
             _onLadder = true;
+            //wait 0.1 seconds o activate again the controller
+            StartCoroutine(WaitToMovePosition());
             Debug.Log("Move Up the ladder");
         }
         if(hit.transform.tag == "Ladder" && _topOfLadder)
@@ -186,9 +249,10 @@ public class Player : MonoBehaviour
     }
     IEnumerator WaitToMovePosition()
     {
-        //yield return new WaitForSeconds(0.1f);
-        yield return null;
-        _anim.SetTrigger("ClimbDownLadder");
+        yield return new WaitForSeconds(0.1f);
+        //yield return null;
+        //_anim.SetTrigger("ClimbDownLadder");
+        _controller.enabled = true;
     }
     public void StartClimbDown()
     {

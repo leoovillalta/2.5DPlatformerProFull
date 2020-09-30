@@ -5,9 +5,9 @@ using UnityEngine;
 public class Ladder : MonoBehaviour
 {
     //[SerializeField]
-    private Vector3 _handPosTopOfLadder, _standPos;
+    private Vector3 _handPosTopOfLadder, _standPos, _handPosBottomOfLadder;
     [SerializeField]
-    private GameObject _handPosGOTopOfLadder, _standPosGO;
+    private GameObject _handPosGOTopOfLadder, _standPosGO, _handPosGOBottomOfLadder;
 
     private void OnTriggerEnter(Collider other)
     {
@@ -35,5 +35,10 @@ public class Ladder : MonoBehaviour
     {
         _handPosTopOfLadder = new Vector3(_handPosGOTopOfLadder.transform.position.x, _handPosGOTopOfLadder.transform.position.y, _handPosGOTopOfLadder.transform.position.z);
         return _handPosTopOfLadder;
+    }
+    public Vector3 GetHanPosBottomOfLadder()
+    {
+        _handPosBottomOfLadder = new Vector3(_handPosGOBottomOfLadder.transform.position.x, _handPosGOBottomOfLadder.transform.position.y, _handPosGOBottomOfLadder.transform.position.z);
+        return _handPosBottomOfLadder;
     }
 }
